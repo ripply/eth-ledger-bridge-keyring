@@ -4,7 +4,13 @@ require('buffer')
 import TransportU2F from '@ledgerhq/hw-transport-u2f'
 import TransportWebHID from '@ledgerhq/hw-transport-webhid'
 import LedgerEth from '@ledgerhq/hw-app-eth'
+import LedgerBTC from '@ledgerhq/hw-app-btc'
 import WebSocketTransport from '@ledgerhq/hw-transport-http/lib/WebSocketTransport'
+import qtumJsLib from 'qtumjs-lib'
+import SafeBuffer from 'safe-buffer'
+import OPS from 'qtum-opcodes'
+import BigNumber from 'bignumber.js'
+
 
 // URL which triggers Ledger Live app to open and handle communication
 const BRIDGE_URL = 'ws://localhost:8435'
@@ -13,13 +19,47 @@ const BRIDGE_URL = 'ws://localhost:8435'
 const TRANSPORT_CHECK_DELAY = 1000
 const TRANSPORT_CHECK_LIMIT = 120
 
+const Buffer = SafeBuffer.Buffer
+
+function number2Buffer(num) {
+    const buffer = []
+    const neg = (num < 0)
+    num = Math.abs(num)
+    while (num) {
+        buffer[buffer.length] = num & 0xff
+        num = num >> 8
+    }
+
+    const top = buffer[buffer.length - 1]
+    if (top & 0x80) {
+        buffer[buffer.length] = neg ? 0x80 : 0x00
+    } else if (neg) {
+        buffer[buffer.length - 1] = top | 0x80
+    }
+    return Buffer.from(buffer)
+}
+
+function hex2Buffer(hexString) {
+    const buffer = []
+    for (let i = 0; i < hexString.length; i += 2) {
+        buffer[buffer.length] = (parseInt(hexString[i], 16) << 4) | parseInt(hexString[i + 1], 16)
+    }
+    return Buffer.from(buffer)
+}
+
+const compressPublicKeySECP256 = (publicKey) =>
+    Buffer.concat([
+        Buffer.from([0x02 + (publicKey[64] & 0x01)]),
+        publicKey.slice(1, 33),
+    ]);
+
 export default class LedgerBridge {
-    constructor () {
+    constructor() {
         this.addEventListeners()
         this.transportType = 'u2f'
     }
 
-    addEventListeners () {
+    addEventListeners() {
         window.addEventListener('message', async e => {
             if (e && e.data && e.data.target === 'LEDGER-IFRAME') {
                 const { action, params, messageId } = e.data
@@ -27,30 +67,37 @@ export default class LedgerBridge {
 
                 switch (action) {
                     case 'ledger-unlock':
+                        console.log('[ledger-bridge hosted ledger-unlock]', action, params);
                         this.unlock(replyAction, params.hdPath, messageId)
                         break
                     case 'ledger-sign-transaction':
+                        console.log('[ledger-bridge hosted ledger-sign-transaction]', action, params);
                         this.signTransaction(replyAction, params.hdPath, params.tx, messageId)
                         break
                     case 'ledger-sign-personal-message':
+                        console.log('[ledger-bridge hosted ledger-sign-personal-message]', action, params);
                         this.signPersonalMessage(replyAction, params.hdPath, params.message, messageId)
                         break
                     case 'ledger-close-bridge':
+                        console.log('[ledger-bridge hosted ledger-close-bridge]', action, params);
                         this.cleanUp(replyAction, messageId)
                         break
                     case 'ledger-update-transport':
+                        console.log('[ledger-bridge hosted ledger-update-transport]', action, params);
                         if (params.transportType === 'ledgerLive' || params.useLedgerLive) {
                             this.updateTransportTypePreference(replyAction, 'ledgerLive', messageId)
                         } else if (params.transportType === 'webhid') {
                             this.updateTransportTypePreference(replyAction, 'webhid', messageId)
                         } else {
-                           this.updateTransportTypePreference(replyAction, 'u2f', messageId)
+                            this.updateTransportTypePreference(replyAction, 'u2f', messageId)
                         }
                         break
                     case 'ledger-make-app':
+                        console.log('[ledger-bridge hosted ledger-make-app]', action, params);
                         this.attemptMakeApp(replyAction, messageId);
                         break
                     case 'ledger-sign-typed-data':
+                        console.log('[ledger-bridge hosted ledger-sign-typed-data]', action, params);
                         this.signTypedData(replyAction, params.hdPath, params.domainSeparatorHex, params.hashStructMessageHex, messageId)
                         break
                 }
@@ -58,15 +105,15 @@ export default class LedgerBridge {
         }, false)
     }
 
-    sendMessageToExtension (msg) {
+    sendMessageToExtension(msg) {
         window.parent.postMessage(msg, '*')
     }
 
-    delay (ms) {
+    delay(ms) {
         return new Promise((success) => setTimeout(success, ms))
     }
 
-    checkTransportLoop (i) {
+    checkTransportLoop(i) {
         const iterator = i || 0
         return WebSocketTransport.check(BRIDGE_URL).catch(async () => {
             await this.delay(TRANSPORT_CHECK_DELAY)
@@ -78,7 +125,7 @@ export default class LedgerBridge {
         })
     }
 
-    async attemptMakeApp (replyAction, messageId) {
+    async attemptMakeApp(replyAction, messageId) {
         try {
             await this.makeApp({ openOnly: true });
             await this.cleanUp();
@@ -98,8 +145,9 @@ export default class LedgerBridge {
         }
     }
 
-    async makeApp (config = {}) {
+    async makeApp(config = {}) {
         try {
+            console.log('[makeApp bridge url=====>]', BRIDGE_URL);
             if (this.transportType === 'ledgerLive') {
                 let reestablish = false;
                 try {
@@ -121,9 +169,11 @@ export default class LedgerBridge {
                     return;
                 }
                 this.transport = config.openOnly
-                ? await TransportWebHID.openConnected()
-                : await TransportWebHID.create()
-                this.app = new LedgerEth(this.transport)
+                    ? await TransportWebHID.openConnected()
+                    : await TransportWebHID.create()
+                console.log('[makeApp transport=====>]', this.transport);
+                // this.app = new LedgerEth(this.transport)
+                this.app = new LedgerBTC(this.transport)
             } else {
                 this.transport = await TransportU2F.create()
                 this.app = new LedgerEth(this.transport)
@@ -134,7 +184,7 @@ export default class LedgerBridge {
         }
     }
 
-    updateTransportTypePreference (replyAction, transportType, messageId) {
+    updateTransportTypePreference(replyAction, transportType, messageId) {
         this.transportType = transportType
         this.cleanUp()
         this.sendMessageToExtension({
@@ -144,7 +194,7 @@ export default class LedgerBridge {
         })
     }
 
-    async cleanUp (replyAction, messageId) {
+    async cleanUp(replyAction, messageId) {
         this.app = null
         if (this.transport) {
             await this.transport.close()
@@ -159,10 +209,13 @@ export default class LedgerBridge {
         }
     }
 
-    async unlock (replyAction, hdPath, messageId) {
+    async unlock(replyAction, hdPath, messageId) {
         try {
+            console.log('[ledger-bridge hosted unlock 0]', hdPath, this.app);
             await this.makeApp()
-            const res = await this.app.getAddress(hdPath, false, true)
+            const res = await this.app.getWalletPublicKey(hdPath, { format: "p2sh" })
+            console.log('[ledger-bridge hosted unlock 1]', hdPath, this.app, res);
+            // const res = await this.app.getAddress(hdPath, false, true)
             this.sendMessageToExtension({
                 action: replyAction,
                 success: true,
@@ -170,6 +223,7 @@ export default class LedgerBridge {
                 messageId,
             })
         } catch (err) {
+            console.log('[ledger-bridge unlock error]', err)
             const e = this.ledgerErrToMessage(err)
             this.sendMessageToExtension({
                 action: replyAction,
@@ -184,10 +238,83 @@ export default class LedgerBridge {
         }
     }
 
-    async signTransaction (replyAction, hdPath, tx, messageId) {
+    async signTransaction(replyAction, hdPath, tx, messageId) {
         try {
             await this.makeApp()
-            const res = await this.app.signTransaction(hdPath, tx)
+            // const res = await this.app.signTransaction(hdPath, tx)
+            const path = hdPath.toString().replace('m/', '')
+
+            console.log('[ledger-bridge hosted signTransaction 0]', hdPath, tx)
+
+            const amount = 0
+            const amountSat = new BigNumber(amount).times(1e8)
+            const fee = new BigNumber(tx.gasLimit).times(tx.gasPrice).div(1e18).toNumber()
+            const feeSat = new BigNumber(fee).times(1e8)
+            let totalSelectSat = new BigNumber(0)
+            const inputs = []
+            const paths = []
+            for (let i = 0; i < tx.selectUtxo.length; i++) {
+                const item = tx.selectUtxo[i]
+                inputs.push([
+                    await this.app.splitTransaction(tx.rawTxList[i]),
+                    item.pos
+                ])
+                paths.push(path)
+                totalSelectSat = totalSelectSat.plus(item.value)
+            }
+            console.log('[ledger-bridge hosted signTransaction 1]', paths, inputs, feeSat.toNumber(), amountSat.toNumber(), totalSelectSat.toNumber())
+
+            const qtumRes = await this.app.getWalletPublicKey(hdPath)
+            const compressed = compressPublicKeySECP256(
+                Buffer.from(qtumRes['publicKey'], 'hex')
+            )
+            let network = {};
+            switch (tx.chainId) {
+                case 8888:
+                    network = qtumJsLib.networks.qtum;
+                    break;
+                case 8889:
+                    network = qtumJsLib.networks.qtum_testnet;
+                    break;
+                default:
+                    network = qtumJsLib.networks.qtum;
+                    break;
+            }
+            console.log('[ledger-bridge hosted signTransaction 2]', qtumRes, compressed)
+
+            const keyPair = new qtumJsLib.ECPair.fromPublicKeyBuffer(compressed, network)
+            console.log('[ledger-bridge hosted signTransaction 3]', keyPair.network, tx.to, tx.data)
+
+            const outputs = new qtumJsLib.TransactionBuilder(keyPair.network)
+            const contract = qtumJsLib.script.compile([
+                OPS.OP_4,
+                number2Buffer(tx.gasLimit),
+                number2Buffer(tx.gasPrice),
+                hex2Buffer(tx.data),
+                hex2Buffer(tx.to),
+                OPS.OP_CALL
+            ])
+            outputs.addOutput(contract, 0)
+            const changeSat = totalSelectSat.minus(amountSat).minus(feeSat)
+            console.log('[ledger-bridge hosted signTransaction 4]', contract, changeSat.toNumber(), tx.from, tx.fromQtum)
+            outputs.addOutput(tx.fromQtum, changeSat.toNumber())
+            console.log('[ledger-bridge hosted signTransaction 5]', outputs)
+            const outputsScript = outputs.buildIncomplete().toHex().slice(10, -8)
+            console.log('[ledger-bridge hosted signTransaction 6]', outputsScript, path, inputs)
+
+            const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex: outputsScript })
+            console.log('[ledger-bridge hosted signTransaction 7]', res)
+
+            // const tx1 = await this.app.splitTransaction(tx);
+            // const outputScripts = await this.app.serializeTransactionOutputs(tx1).toString('hex');
+            // console.log('[ledger-bridge hosted signTransaction 1]', path, tx1, outputScripts)
+            // const res = await this.app.createPaymentTransactionNew({
+            //     inputs: [[tx1, 0]],
+            //     associatedKeysets: [path],
+            //     outputScriptHex: outputScripts
+            // })
+            // console.log('[ledger-bridge hosted signTransaction 2]', res)
+
             this.sendMessageToExtension({
                 action: replyAction,
                 success: true,
@@ -196,6 +323,7 @@ export default class LedgerBridge {
             })
 
         } catch (err) {
+            console.log('[ledger-bridge hosted signTransaction err]', err)
             const e = this.ledgerErrToMessage(err)
             this.sendMessageToExtension({
                 action: replyAction,
@@ -211,7 +339,7 @@ export default class LedgerBridge {
         }
     }
 
-    async signPersonalMessage (replyAction, hdPath, message, messageId) {
+    async signPersonalMessage(replyAction, hdPath, message, messageId) {
         try {
             await this.makeApp()
 
@@ -238,7 +366,7 @@ export default class LedgerBridge {
         }
     }
 
-    async signTypedData (replyAction, hdPath, domainSeparatorHex, hashStructMessageHex, messageId) {
+    async signTypedData(replyAction, hdPath, domainSeparatorHex, hashStructMessageHex, messageId) {
         try {
             await this.makeApp()
             const res = await this.app.signEIP712HashedMessage(hdPath, domainSeparatorHex, hashStructMessageHex)
@@ -263,7 +391,7 @@ export default class LedgerBridge {
         }
     }
 
-    ledgerErrToMessage (err) {
+    ledgerErrToMessage(err) {
         const isU2FError = (err) => !!err && !!(err).metaData
         const isStringError = (err) => typeof err === 'string'
         const isErrorWithId = (err) => err.hasOwnProperty('id') && err.hasOwnProperty('message')
@@ -272,10 +400,10 @@ export default class LedgerBridge {
 
         // https://developers.yubico.com/U2F/Libraries/Client_error_codes.html
         if (isU2FError(err)) {
-          if (err.metaData.code === 5) {
-            return new Error('LEDGER_TIMEOUT')
-          }
-          return err.metaData.type
+            if (err.metaData.code === 5) {
+                return new Error('LEDGER_TIMEOUT')
+            }
+            return err.metaData.type
         }
 
         if (isWrongAppError(err)) {
@@ -287,10 +415,10 @@ export default class LedgerBridge {
         }
 
         if (isErrorWithId(err)) {
-          // Browser doesn't support U2F
-          if (err.message.includes('U2F not supported')) {
-            return new Error('U2F_NOT_SUPPORTED')
-          }
+            // Browser doesn't support U2F
+            if (err.message.includes('U2F not supported')) {
+                return new Error('U2F_NOT_SUPPORTED')
+            }
         }
 
         // Other
