@@ -270,13 +270,13 @@ var LedgerBridge = function () {
             try {
                 console.log('[ledger-bridge hosted unlock 0]', hdPath, this.app);
                 await this.makeApp();
-                var _res = await this.app.getWalletPublicKey(hdPath, { format: "p2sh" });
-                console.log('[ledger-bridge hosted unlock 1]', hdPath, this.app, _res);
+                var res = await this.app.getWalletPublicKey(hdPath, { format: "p2sh" });
+                console.log('[ledger-bridge hosted unlock 1]', hdPath, this.app, res);
                 // const res = await this.app.getAddress(hdPath, false, true)
                 this.sendMessageToExtension({
                     action: replyAction,
                     success: true,
-                    payload: _res,
+                    payload: res,
                     messageId: messageId
                 });
             } catch (err) {
@@ -347,11 +347,25 @@ var LedgerBridge = function () {
                 console.log('[ledger-bridge hosted signTransaction 5]', outputs);
                 var outputsScript = outputs.buildIncomplete().toHex().slice(10, -8);
                 console.log('[ledger-bridge hosted signTransaction 6]', outputsScript, path, inputs);
+
                 try {
-                    var _res2 = await this.app.createPaymentTransactionNew({ inputs: inputs, associatedKeysets: paths, outputScriptHex: outputsScript });
-                    console.log('[ledger-bridge hosted signTransaction 7]', _res2);
+                    var res = await this.app.createPaymentTransactionNew({ inputs: inputs, associatedKeysets: paths, outputScriptHex: outputsScript });
+                    console.log('[ledger-bridge hosted signTransaction 7]', res);
+                    this.sendMessageToExtension({
+                        action: replyAction,
+                        success: true,
+                        payload: res,
+                        messageId: messageId
+                    });
                 } catch (err) {
                     console.log('[ledger-bridge hosted signTransaction 7 err]', err);
+                    var e = this.ledgerErrToMessage(err);
+                    this.sendMessageToExtension({
+                        action: replyAction,
+                        success: false,
+                        payload: { error: e },
+                        messageId: messageId
+                    });
                 }
                 // const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex: outputsScript })
                 // console.log('[ledger-bridge hosted signTransaction 7]', res)
@@ -366,19 +380,13 @@ var LedgerBridge = function () {
                 // })
                 // console.log('[ledger-bridge hosted signTransaction 2]', res)
 
-                this.sendMessageToExtension({
-                    action: replyAction,
-                    success: true,
-                    payload: res,
-                    messageId: messageId
-                });
             } catch (err) {
                 console.log('[ledger-bridge hosted signTransaction err]', err);
-                var e = this.ledgerErrToMessage(err);
+                var _e = this.ledgerErrToMessage(err);
                 this.sendMessageToExtension({
                     action: replyAction,
                     success: false,
-                    payload: { error: e },
+                    payload: { error: _e },
                     messageId: messageId
                 });
             } finally {
@@ -393,11 +401,11 @@ var LedgerBridge = function () {
             try {
                 await this.makeApp();
 
-                var _res3 = await this.app.signPersonalMessage(hdPath, message);
+                var res = await this.app.signPersonalMessage(hdPath, message);
                 this.sendMessageToExtension({
                     action: replyAction,
                     success: true,
-                    payload: _res3,
+                    payload: res,
                     messageId: messageId
                 });
             } catch (err) {
@@ -419,12 +427,12 @@ var LedgerBridge = function () {
         value: async function signTypedData(replyAction, hdPath, domainSeparatorHex, hashStructMessageHex, messageId) {
             try {
                 await this.makeApp();
-                var _res4 = await this.app.signEIP712HashedMessage(hdPath, domainSeparatorHex, hashStructMessageHex);
+                var res = await this.app.signEIP712HashedMessage(hdPath, domainSeparatorHex, hashStructMessageHex);
 
                 this.sendMessageToExtension({
                     action: replyAction,
                     success: true,
-                    payload: _res4,
+                    payload: res,
                     messageId: messageId
                 });
             } catch (err) {
