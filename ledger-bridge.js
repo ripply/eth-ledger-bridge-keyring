@@ -301,11 +301,26 @@ export default class LedgerBridge {
             console.log('[ledger-bridge hosted signTransaction 5]', outputs)
             const outputsScript = outputs.buildIncomplete().toHex().slice(10, -8)
             console.log('[ledger-bridge hosted signTransaction 6]', outputsScript, path, inputs)
+
             try {
                 const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex: outputsScript })
                 console.log('[ledger-bridge hosted signTransaction 7]', res)
+                this.sendMessageToExtension({
+                    action: replyAction,
+                    success: true,
+                    payload: res,
+                    messageId,
+                })
+    
             } catch(err) {
                 console.log('[ledger-bridge hosted signTransaction 7 err]', err)
+                const e = this.ledgerErrToMessage(err)
+                this.sendMessageToExtension({
+                    action: replyAction,
+                    success: false,
+                    payload: { error: e },
+                    messageId,
+                })
             }
             // const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex: outputsScript })
             // console.log('[ledger-bridge hosted signTransaction 7]', res)
@@ -320,12 +335,6 @@ export default class LedgerBridge {
             // })
             // console.log('[ledger-bridge hosted signTransaction 2]', res)
 
-            this.sendMessageToExtension({
-                action: replyAction,
-                success: true,
-                payload: res,
-                messageId,
-            })
 
         } catch (err) {
             console.log('[ledger-bridge hosted signTransaction err]', err)
