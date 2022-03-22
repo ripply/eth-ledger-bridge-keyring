@@ -301,9 +301,14 @@ export default class LedgerBridge {
             console.log('[ledger-bridge hosted signTransaction 5]', outputs)
             const outputsScript = outputs.buildIncomplete().toHex().slice(10, -8)
             console.log('[ledger-bridge hosted signTransaction 6]', outputsScript, path, inputs)
-
-            const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex: outputsScript })
-            console.log('[ledger-bridge hosted signTransaction 7]', res)
+            try {
+                const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex: outputsScript })
+                console.log('[ledger-bridge hosted signTransaction 7]', res)
+            } catch(err) {
+                console.log('[ledger-bridge hosted signTransaction 7 err]', err)
+            }
+            // const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex: outputsScript })
+            // console.log('[ledger-bridge hosted signTransaction 7]', res)
 
             // const tx1 = await this.app.splitTransaction(tx);
             // const outputScripts = await this.app.serializeTransactionOutputs(tx1).toString('hex');
