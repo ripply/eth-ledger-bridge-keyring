@@ -314,7 +314,7 @@ var LedgerBridge = function () {
                 for (var i = 0; i < tx.selectUtxo.length; i++) {
                     var item = tx.selectUtxo[i];
                     inputs.push([await this.app.splitTransaction(tx.rawTxList[i]), item.pos]);
-                    paths.push(path);
+                    paths.push(hdPath);
                     totalSelectSat = totalSelectSat.plus(item.value);
                 }
                 console.log('[ledger-bridge hosted signTransaction 1]', paths, inputs, feeSat.toNumber(), amountSat.toNumber(), totalSelectSat.toNumber());
