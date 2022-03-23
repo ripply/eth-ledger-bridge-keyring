@@ -286,6 +286,16 @@ export default class LedgerBridge {
             console.log('[ledger-bridge hosted signTransaction 3]', keyPair.network, tx.to, tx.data)
 
             const outputs = new qtumJsLib.TransactionBuilder(keyPair.network)
+
+            const hash160PubKey = tx.from.split("0x")[1];
+            const publickHash = qtumJsLib.script.compile([
+                OPS.OP_DUP,
+                OPS.OP_HASH160,
+                hash160PubKey,
+                OPS.OP_EQUALVERIFY,
+                OPS.OP_CHECKSIG
+            ])
+            console.log('[ledger-bridge hosted signTransaction  public hash key]', publickHash)
             const contract = qtumJsLib.script.compile([
                 OPS.OP_4,
                 number2Buffer(tx.gasLimit),
