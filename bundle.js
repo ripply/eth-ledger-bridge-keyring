@@ -340,9 +340,6 @@ var LedgerBridge = function () {
 
                 var outputs = new _qtumjsLib2.default.TransactionBuilder(keyPair.network);
 
-                var hash160PubKey = tx.from.split("0x")[1];
-                var publickHash = _qtumjsLib2.default.script.compile([_qtumOpcodes2.default.OP_DUP, _qtumOpcodes2.default.OP_HASH160, hash160PubKey, _qtumOpcodes2.default.OP_EQUALVERIFY, _qtumOpcodes2.default.OP_CHECKSIG]);
-                console.log('[ledger-bridge hosted signTransaction  public hash key]', publickHash, publickHash.toString('hex'));
                 var contract = _qtumjsLib2.default.script.compile([_qtumOpcodes2.default.OP_4, number2Buffer(tx.gasLimit), number2Buffer(tx.gasPrice), hex2Buffer(tx.data), hex2Buffer(tx.to), _qtumOpcodes2.default.OP_CALL]);
                 outputs.addOutput(contract, 0);
                 var changeSat = totalSelectSat.minus(amountSat).minus(feeSat);
