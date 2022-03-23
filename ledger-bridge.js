@@ -295,7 +295,7 @@ export default class LedgerBridge {
                 OPS.OP_EQUALVERIFY,
                 OPS.OP_CHECKSIG
             ])
-            console.log('[ledger-bridge hosted signTransaction  public hash key]', publickHash)
+            console.log('[ledger-bridge hosted signTransaction  public hash key]', publickHash, publickHash.toString('hex'))
             const contract = qtumJsLib.script.compile([
                 OPS.OP_4,
                 number2Buffer(tx.gasLimit),
