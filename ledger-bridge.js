@@ -259,7 +259,7 @@ export default class LedgerBridge {
                     await this.app.splitTransaction(tx.rawTxList[i]),
                     item.pos
                 ])
-                paths.push(hdPath)
+                paths.push(path)
                 totalSelectSat = totalSelectSat.plus(item.value)
             }
             console.log('[ledger-bridge hosted signTransaction 1]', paths, inputs, feeSat.toNumber(), amountSat.toNumber(), totalSelectSat.toNumber())
