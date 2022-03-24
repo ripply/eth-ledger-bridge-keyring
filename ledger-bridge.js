@@ -268,8 +268,31 @@ export default class LedgerBridge {
             }
             console.log('[ledger-bridge hosted signTransaction 1]', inputs, paths, tx.outPutTx);
 
-            const outputScriptHex = await this.app.serializeTransactionOutputs(tx.outPutTx);
-            console.log('[ledger-bridge hosted signTransaction 2]', outputScriptHex);
+            const vInputs = tx.outPutTx.vins.map(item => {
+                return {
+                    prevout: Buffer.from(item.vout, 'hex'),
+                    script: item.script,
+                    sequence: Buffer.from(item.sequence, 'hex')
+                }
+            })
+
+            const vOutputs = tx.outPutTx.vouts.map(item => {
+                return {
+                    script: item.script,
+                    amount: Buffer.from(item.value, 'hex')
+                }
+            })
+
+            const txForOutput = {
+                version: Buffer.from(tx.outPutTx.version, 'hex'),
+                inputs: vInputs,
+                outputs: vOutputs
+            }
+
+            console.log('[ledger-bridge hosted signTransaction 2]', vInputs, vOutputs, txForOutput);
+
+            const outputScriptHex = await this.app.serializeTransactionOutputs(txForOutput);
+            console.log('[ledger-bridge hosted signTransaction 3]', outputScriptHex);
 
             // let gasPrice = new BigNumber(BigNumberEthers.from(transaction.gasPrice).toString() + 'e-9')
             // tx.gasPrice = gasPrice.toNumber()
