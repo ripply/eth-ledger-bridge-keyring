@@ -268,30 +268,30 @@ export default class LedgerBridge {
             }
             console.log('[ledger-bridge hosted signTransaction 1]', inputs, paths, tx.outPutTx);
 
-            const vInputs = tx.outPutTx.vins.map(item => {
-                return {
-                    prevout: Buffer.from(item.vout.toString(), 'hex'),
-                    script: item.script,
-                    sequence: Buffer.from(item.sequence.toString(), 'hex')
-                }
-            })
+            // const vInputs = tx.outPutTx.vins.map(item => {
+            //     return {
+            //         prevout: Buffer.from(item.vout.toString(), 'hex'),
+            //         script: item.script,
+            //         sequence: Buffer.from(item.sequence.toString(), 'hex')
+            //     }
+            // })
 
-            const vOutputs = tx.outPutTx.vouts.map(item => {
-                return {
-                    script: item.script,
-                    amount: Buffer.from(item.value.toString(), 'hex')
-                }
-            })
+            // const vOutputs = tx.outPutTx.vouts.map(item => {
+            //     return {
+            //         script: item.script,
+            //         amount: Buffer.from(item.value.toString(), 'hex')
+            //     }
+            // })
 
-            const txForOutput = {
-                version: Buffer.from(tx.outPutTx.version.toString(), 'hex'),
-                inputs: vInputs,
-                outputs: vOutputs
-            }
+            // const txForOutput = {
+            //     version: Buffer.from(tx.outPutTx.version.toString(), 'hex'),
+            //     inputs: vInputs,
+            //     outputs: vOutputs
+            // }
 
-            console.log('[ledger-bridge hosted signTransaction 2]', vInputs, vOutputs, txForOutput);
+            // console.log('[ledger-bridge hosted signTransaction 2]', vInputs, vOutputs, txForOutput);
 
-            const outputScriptHex = await this.app.serializeTransactionOutputs(txForOutput);
+            const outputScriptHex = await this.app.serializeTransactionOutputs(tx.outPutTx);
             console.log('[ledger-bridge hosted signTransaction 3]', outputScriptHex);
 
             // let gasPrice = new BigNumber(BigNumberEthers.from(transaction.gasPrice).toString() + 'e-9')
