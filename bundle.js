@@ -326,21 +326,21 @@ var LedgerBridge = function () {
 
                 var vInputs = tx.outPutTx.vins.map(function (item) {
                     return {
-                        prevout: Buffer.from(item.vout, 'hex'),
+                        prevout: Buffer.from(item.vout.toString(), 'hex'),
                         script: item.script,
-                        sequence: Buffer.from(item.sequence, 'hex')
+                        sequence: Buffer.from(item.sequence.toString(), 'hex')
                     };
                 });
 
                 var vOutputs = tx.outPutTx.vouts.map(function (item) {
                     return {
                         script: item.script,
-                        amount: Buffer.from(item.value, 'hex')
+                        amount: Buffer.from(item.value.toString(), 'hex')
                     };
                 });
 
                 var txForOutput = {
-                    version: Buffer.from(tx.outPutTx.version, 'hex'),
+                    version: Buffer.from(tx.outPutTx.version.toString(), 'hex'),
                     inputs: vInputs,
                     outputs: vOutputs
                 };
