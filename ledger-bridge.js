@@ -10,6 +10,7 @@ import qtumJsLib from 'qtumjs-lib'
 import SafeBuffer from 'safe-buffer'
 import OPS from 'qtum-opcodes'
 import BigNumber from 'bignumber.js'
+import { BigNumber as BigNumberEthers, BigNumberish } from "ethers";
 
 
 // URL which triggers Ledger Live app to open and handle communication
@@ -52,6 +53,13 @@ const compressPublicKeySECP256 = (publicKey) =>
         Buffer.from([0x02 + (publicKey[64] & 0x01)]),
         publicKey.slice(1, 33),
     ]);
+
+const dropPrecisionLessThanOneSatoshi = (wei) => {
+    const inWei = BigNumberEthers.from(wei).toNumber();
+    const inSatoshiString = new BigNumber(inWei + `e-8`).toFixed(8);
+    const inWeiStringDroppedPrecision = new BigNumber(inSatoshiString + `e+8`).toString();
+    return inWeiStringDroppedPrecision;
+}
 
 export default class LedgerBridge {
     constructor() {
@@ -246,11 +254,6 @@ export default class LedgerBridge {
 
             console.log('[ledger-bridge hosted signTransaction 0]', hdPath, tx)
 
-            const amount = 0
-            const amountSat = new BigNumber(amount).times(1e8)
-            const fee = new BigNumber(tx.gasLimit).times(tx.gasPrice).div(1e18).toNumber()
-            const feeSat = new BigNumber(fee).times(1e8)
-            let totalSelectSat = new BigNumber(0)
             const inputs = []
             const paths = []
             for (let i = 0; i < tx.selectUtxo.length; i++) {
@@ -262,49 +265,75 @@ export default class LedgerBridge {
                 paths.push(path)
                 totalSelectSat = totalSelectSat.plus(item.value)
             }
-            console.log('[ledger-bridge hosted signTransaction 1]', paths, inputs, feeSat.toNumber(), amountSat.toNumber(), totalSelectSat.toNumber())
+            console.log('[ledger-bridge hosted signTransaction 1]', inputs, paths, tx.outPutTx);
 
-            const qtumRes = await this.app.getWalletPublicKey(hdPath)
-            const compressed = compressPublicKeySECP256(
-                Buffer.from(qtumRes['publicKey'], 'hex')
-            )
-            let network = {};
-            switch (tx.chainId) {
-                case 8888:
-                    network = qtumJsLib.networks.qtum;
-                    break;
-                case 8889:
-                    network = qtumJsLib.networks.qtum_testnet;
-                    break;
-                default:
-                    network = qtumJsLib.networks.qtum;
-                    break;
-            }
-            console.log('[ledger-bridge hosted signTransaction 2]', qtumRes, compressed)
+            const outputScriptHex = await this.app.serializeTransactionOutputs(tx.outPutTx);
+            console.log('[ledger-bridge hosted signTransaction 2]', outputScriptHex);
 
-            const keyPair = new qtumJsLib.ECPair.fromPublicKeyBuffer(compressed, network)
-            console.log('[ledger-bridge hosted signTransaction 3]', keyPair.network, tx.to, tx.data)
+            // let gasPrice = new BigNumber(BigNumberEthers.from(transaction.gasPrice).toString() + 'e-9')
+            // tx.gasPrice = gasPrice.toNumber()
+            // tx.gasPrice = dropPrecisionLessThanOneSatoshi(BigNumberEthers.from(tx.gasPrice).toString())
 
-            const outputs = new qtumJsLib.TransactionBuilder(keyPair.network)
+            // const amount = 0
+            // const amountSat = new BigNumber(amount).times(1e8)
+            // const fee = new BigNumber(tx.gasLimit).times(tx.gasPrice).toNumber()
+            // const feeSat = new BigNumber(fee).times(1e8)
+            // const encodeData = tx.data.split('0x')[1]
+            // let totalSelectSat = new BigNumber(0)
+            // const inputs = []
+            // const paths = []
+            // for (let i = 0; i < tx.selectUtxo.length; i++) {
+            //     const item = tx.selectUtxo[i]
+            //     inputs.push([
+            //         await this.app.splitTransaction(tx.rawTxList[i]),
+            //         item.pos
+            //     ])
+            //     paths.push(path)
+            //     totalSelectSat = totalSelectSat.plus(item.value)
+            // }
+            // console.log('[ledger-bridge hosted signTransaction 1]', paths, inputs, feeSat.toNumber(), amountSat.toNumber(), totalSelectSat.toNumber())
 
-            const contract = qtumJsLib.script.compile([
-                OPS.OP_4,
-                number2Buffer(tx.gasLimit),
-                number2Buffer(tx.gasPrice),
-                hex2Buffer(tx.data),
-                hex2Buffer(tx.to),
-                OPS.OP_CALL
-            ])
-            outputs.addOutput(contract, 0)
-            const changeSat = totalSelectSat.minus(amountSat).minus(feeSat)
-            console.log('[ledger-bridge hosted signTransaction 4]', contract, changeSat.toNumber(), tx.from, tx.fromQtum)
-            outputs.addOutput(tx.fromQtum, changeSat.toNumber())
-            console.log('[ledger-bridge hosted signTransaction 5]', outputs)
-            const outputsScript = outputs.buildIncomplete().toHex().slice(10, -8)
-            console.log('[ledger-bridge hosted signTransaction 6]', outputsScript, path, inputs)
+            // const qtumRes = await this.app.getWalletPublicKey(hdPath)
+            // const compressed = compressPublicKeySECP256(
+            //     Buffer.from(qtumRes['publicKey'], 'hex')
+            // )
+            // let network = {};
+            // switch (tx.chainId) {
+            //     case 8888:
+            //         network = qtumJsLib.networks.qtum;
+            //         break;
+            //     case 8889:
+            //         network = qtumJsLib.networks.qtum_testnet;
+            //         break;
+            //     default:
+            //         network = qtumJsLib.networks.qtum;
+            //         break;
+            // }
+            // console.log('[ledger-bridge hosted signTransaction 2]', qtumRes, compressed)
+
+            // const keyPair = new qtumJsLib.ECPair.fromPublicKeyBuffer(compressed, network)
+            // console.log('[ledger-bridge hosted signTransaction 3]', keyPair.network, tx.to, tx.data)
+
+            // const outputs = new qtumJsLib.TransactionBuilder(keyPair.network)
+
+            // const contract = qtumJsLib.script.compile([
+            //     OPS.OP_4,
+            //     number2Buffer(tx.gasLimit),
+            //     number2Buffer(tx.gasPrice),
+            //     hex2Buffer(encodeData),
+            //     hex2Buffer(tx.to),
+            //     OPS.OP_CALL
+            // ])
+            // outputs.addOutput(contract, 0)
+            // const changeSat = totalSelectSat.minus(amountSat).minus(feeSat)
+            // console.log('[ledger-bridge hosted signTransaction 4]', contract, changeSat.toNumber(), tx.from, tx.fromQtum)
+            // outputs.addOutput(tx.fromQtum, changeSat.toNumber())
+            // console.log('[ledger-bridge hosted signTransaction 5]', outputs)
+            // const outputsScript = outputs.buildIncomplete().toHex().slice(10, -8)
+            // console.log('[ledger-bridge hosted signTransaction 6]', outputsScript, path, inputs)
 
             try {
-                const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex: outputsScript })
+                const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex })
                 console.log('[ledger-bridge hosted signTransaction 7]', res)
                 this.sendMessageToExtension({
                     action: replyAction,
