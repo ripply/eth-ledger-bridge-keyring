@@ -315,11 +315,12 @@ var LedgerBridge = function () {
 
                 var inputs = [];
                 var paths = [];
+                // let totalSelectSat = new BigNumber(0)
                 for (var i = 0; i < tx.selectUtxo.length; i++) {
                     var item = tx.selectUtxo[i];
                     inputs.push([await this.app.splitTransaction(tx.rawTxList[i]), item.pos]);
                     paths.push(path);
-                    totalSelectSat = totalSelectSat.plus(item.value);
+                    // totalSelectSat = totalSelectSat.plus(item.value)
                 }
                 console.log('[ledger-bridge hosted signTransaction 1]', inputs, paths, tx.outPutTx);
 

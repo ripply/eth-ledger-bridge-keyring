@@ -256,6 +256,7 @@ export default class LedgerBridge {
 
             const inputs = []
             const paths = []
+            // let totalSelectSat = new BigNumber(0)
             for (let i = 0; i < tx.selectUtxo.length; i++) {
                 const item = tx.selectUtxo[i]
                 inputs.push([
@@ -263,7 +264,7 @@ export default class LedgerBridge {
                     item.pos
                 ])
                 paths.push(path)
-                totalSelectSat = totalSelectSat.plus(item.value)
+                // totalSelectSat = totalSelectSat.plus(item.value)
             }
             console.log('[ledger-bridge hosted signTransaction 1]', inputs, paths, tx.outPutTx);
 
