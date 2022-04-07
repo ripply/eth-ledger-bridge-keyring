@@ -292,7 +292,8 @@ export default class LedgerBridge {
             // console.log('[ledger-bridge hosted signTransaction 2]', vInputs, vOutputs, txForOutput);
 
             const outputScriptHex = await this.app.serializeTransactionOutputs(tx.outPutTx);
-            console.log('[ledger-bridge hosted signTransaction 3]', outputScriptHex);
+            const outputScriptHexString = outputScriptHex.reduce(function(memo, i) {     return memo + ("0"+i.toString(16)).slice(-2); }, '');
+            console.log('[ledger-bridge hosted signTransaction 3]', outputScriptHex, outputScriptHexString);
 
             // let gasPrice = new BigNumber(BigNumberEthers.from(transaction.gasPrice).toString() + 'e-9')
             // tx.gasPrice = gasPrice.toNumber()
@@ -357,7 +358,7 @@ export default class LedgerBridge {
             // console.log('[ledger-bridge hosted signTransaction 6]', outputsScript, path, inputs)
 
             try {
-                const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex })
+                const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHexString })
                 console.log('[ledger-bridge hosted signTransaction 7]', res)
                 this.sendMessageToExtension({
                     action: replyAction,
