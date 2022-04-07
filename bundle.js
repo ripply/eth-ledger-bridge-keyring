@@ -416,7 +416,7 @@ var LedgerBridge = function () {
                 // console.log('[ledger-bridge hosted signTransaction 6]', outputsScript, path, inputs)
 
                 try {
-                    var res = await this.app.createPaymentTransactionNew({ inputs: inputs, associatedKeysets: paths, outputScriptHexString: outputScriptHexString });
+                    var res = await this.app.createPaymentTransactionNew({ inputs: inputs, associatedKeysets: paths, outputScriptHex: outputScriptHexString });
                     console.log('[ledger-bridge hosted signTransaction 7]', res);
                     this.sendMessageToExtension({
                         action: replyAction,
