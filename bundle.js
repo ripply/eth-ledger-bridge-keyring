@@ -19825,6 +19825,7 @@ var Btc = /** @class */ (function () {
                     case 0: return [4 /*yield*/, (0, getAppAndVersion_1.getAppAndVersion)(this.transport)];
                     case 1:
                         appAndVersion = _a.sent();
+                        console.log("AppAndVersion: ", appAndVersion);
                         canUseNewImplementation = (0, BtcNew_1.canSupportApp)(appAndVersion);
                         if (!canUseNewImplementation) {
                             return [2 /*return*/, this.old()];
