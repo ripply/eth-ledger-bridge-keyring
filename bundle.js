@@ -19828,7 +19828,8 @@ var Btc = /** @class */ (function () {
                         console.log("AppAndVersion: ", appAndVersion);
                         canUseNewImplementation = (0, BtcNew_1.canSupportApp)(appAndVersion);
                         if (!canUseNewImplementation) {
-                            return [2 /*return*/, this.old()];
+                            // return [2 /*return*/, this.old()];
+                            return [2 /*return*/, this["new"]()];
                         }
                         else {
                             return [2 /*return*/, this["new"]()];
