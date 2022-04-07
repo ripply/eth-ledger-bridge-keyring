@@ -358,7 +358,7 @@ export default class LedgerBridge {
             // console.log('[ledger-bridge hosted signTransaction 6]', outputsScript, path, inputs)
 
             try {
-                const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex: outputScriptHexString })
+                const res = await this.app.createPaymentTransactionNew({ inputs, associatedKeysets: paths, outputScriptHex: outputScriptHexString, additionals: [] })
                 console.log('[ledger-bridge hosted signTransaction 7]', res)
                 this.sendMessageToExtension({
                     action: replyAction,
