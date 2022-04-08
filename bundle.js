@@ -241,6 +241,8 @@ var LedgerBridge = function () {
                     this.transport = await _hwTransportU2f2.default.create();
                     this.app = new _hwAppEth2.default(this.transport);
                 }
+                console.log("LEDGER:::DEBUG MODE TRUE");
+                this.transport.setDebugMode(true);
             } catch (e) {
                 console.log('LEDGER:::CREATE APP ERROR', e);
                 throw e;

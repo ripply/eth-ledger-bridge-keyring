@@ -186,6 +186,8 @@ export default class LedgerBridge {
                 this.transport = await TransportU2F.create()
                 this.app = new LedgerEth(this.transport)
             }
+            console.log("LEDGER:::DEBUG MODE TRUE");
+            this.transport.setDebugMode(true);
         } catch (e) {
             console.log('LEDGER:::CREATE APP ERROR', e)
             throw e
