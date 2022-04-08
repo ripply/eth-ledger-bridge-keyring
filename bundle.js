@@ -7,6 +7,10 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _logs = require('@ledgerhq/logs');
+
+var _logs2 = _interopRequireDefault(_logs);
+
 var _hwTransportU2f = require('@ledgerhq/hw-transport-u2f');
 
 var _hwTransportU2f2 = _interopRequireDefault(_hwTransportU2f);
@@ -242,7 +246,9 @@ var LedgerBridge = function () {
                     this.app = new _hwAppEth2.default(this.transport);
                 }
                 console.log("LEDGER:::DEBUG MODE TRUE");
-                this.transport.setDebugMode(true);
+                _logs2.default.listen(function (log) {
+                    return console.log(log.type + ": " + log.message);
+                });
             } catch (e) {
                 console.log('LEDGER:::CREATE APP ERROR', e);
                 throw e;
@@ -568,7 +574,7 @@ var LedgerBridge = function () {
 
 exports.default = LedgerBridge;
 
-},{"@ledgerhq/hw-app-btc":129,"@ledgerhq/hw-app-eth":207,"@ledgerhq/hw-transport-http/lib/WebSocketTransport":247,"@ledgerhq/hw-transport-u2f":251,"@ledgerhq/hw-transport-webhid":254,"bignumber.js":273,"buffer":344,"ethers":378,"qtum-opcodes":424,"qtumjs-lib":426,"safe-buffer":446}],2:[function(require,module,exports){
+},{"@ledgerhq/hw-app-btc":129,"@ledgerhq/hw-app-eth":207,"@ledgerhq/hw-transport-http/lib/WebSocketTransport":247,"@ledgerhq/hw-transport-u2f":251,"@ledgerhq/hw-transport-webhid":254,"@ledgerhq/logs":260,"bignumber.js":273,"buffer":344,"ethers":378,"qtum-opcodes":424,"qtumjs-lib":426,"safe-buffer":446}],2:[function(require,module,exports){
 'use strict';
 
 var _ledgerBridge = require('./ledger-bridge');
