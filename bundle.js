@@ -9,8 +9,6 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 var _logs = require('@ledgerhq/logs');
 
-var _logs2 = _interopRequireDefault(_logs);
-
 var _hwTransportU2f = require('@ledgerhq/hw-transport-u2f');
 
 var _hwTransportU2f2 = _interopRequireDefault(_hwTransportU2f);
@@ -246,7 +244,7 @@ var LedgerBridge = function () {
                     this.app = new _hwAppEth2.default(this.transport);
                 }
                 console.log("LEDGER:::DEBUG MODE TRUE");
-                _logs2.default.listen(function (log) {
+                _logs.log.listen(function (log) {
                     return console.log(log.type + ": " + log.message);
                 });
             } catch (e) {

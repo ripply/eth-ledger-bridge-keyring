@@ -1,7 +1,7 @@
 'use strict'
 require('buffer')
 
-import logger from "@ledgerhq/logs";
+import {log} from "@ledgerhq/logs";
 import TransportU2F from '@ledgerhq/hw-transport-u2f'
 import TransportWebHID from '@ledgerhq/hw-transport-webhid'
 import LedgerEth from '@ledgerhq/hw-app-eth'
@@ -188,7 +188,7 @@ export default class LedgerBridge {
                 this.app = new LedgerEth(this.transport)
             }
             console.log("LEDGER:::DEBUG MODE TRUE");
-            logger.listen(log => console.log(log.type + ": " + log.message));
+            log.listen(log => console.log(log.type + ": " + log.message));
         } catch (e) {
             console.log('LEDGER:::CREATE APP ERROR', e)
             throw e
